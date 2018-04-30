@@ -228,6 +228,7 @@ static unsigned int opt_nfactor = 6;
 int opt_n_threads = 0;
 int64_t opt_affinity = -1L;
 int opt_priority = 0;
+int opt_loopdelay = 0;
 int num_cpus;
 char *rpc_url;
 char *rpc_userpass;
@@ -390,6 +391,7 @@ Options:\n\
       --cputest         debug hashes from cpu algorithms\n\
       --cpu-affinity    set process affinity to cpu core(s), mask 0x3 for cores 0 and 1\n\
       --cpu-priority    set process priority (default: 0 idle, 2 normal to 5 highest)\n\
+      --loopdelay       usleep every loop in miner thread\n\
   -b, --api-bind        IP/Port for the miner API (default: 127.0.0.1:4048)\n\
       --api-remote      Allow remote control\n\
       --max-temp=N      Only mine if cpu temp is less than specified value (linux)\n\
@@ -420,6 +422,7 @@ static struct option const options[] = {
 	{ "config", 1, NULL, 'c' },
 	{ "cpu-affinity", 1, NULL, 1020 },
 	{ "cpu-priority", 1, NULL, 1021 },
+	{ "loopdelay", 1, NULL, 1022 },
 	{ "no-color", 0, NULL, 1002 },
 	{ "debug", 0, NULL, 'D' },
 	{ "diff-factor", 1, NULL, 'f' },
@@ -1983,6 +1986,10 @@ static void *miner_thread(void *userdata)
 		int wkcmp_sz = nonce_oft;
 		int rc = 0;
 
+		if (opt_loopdelay > 0) {
+			usleep(opt_loopdelay);
+		}
+
 		if (opt_algo == ALGO_DROP || opt_algo == ALGO_ZR5) {
 			// Duplicates: ignore pok in data[0]
 			wkcmp_sz -= sizeof(uint32_t);
@@ -3188,6 +3195,10 @@ void parse_arg(int key, char *arg)
 		if (v < 0 || v > 5)	/* sanity check */
 			show_usage_and_exit(1);
 		opt_priority = v;
+		break;
+	case 1022:
+		v = atoi(arg);
+		opt_loopdelay = v;
 		break;
 	case 1060: // max-temp
 		d = atof(arg);
